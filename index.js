@@ -40,6 +40,13 @@ async function run() {
         //--------------------------------------------------------------
         // BootCamp Users all code Here 
         //--------------------------------------------------------------
+        app.post('/registrations', async (req, res) => {
+            const registration = req.body;
+            const result = await bootCamp_Registration_Collection.insertOne(registration);
+            res.send(result);
+        })
+
+
         app.get('/registrations', async (req, res) => {
             const query = {};
             const cursor = bootCamp_Registration_Collection.find(query);
@@ -47,6 +54,28 @@ async function run() {
             res.send(registrations);
         })
 
+        //---------------------------------------------------------------------------------------------------------
+        // this is the registration for a specific camp here the count how many user registered for a specific camp
+        // and how many paid and unpaid the registration bootCamp 
+        app.get("/registrations/stats/:campName", async (req, res) => {
+            const campName = req.params.campName;
+            try {
+                const total = await bootCamp_Registration_Collection.countDocuments({ campName });
+                const paid = await bootCamp_Registration_Collection.countDocuments({
+                    campName,
+                    payment_status: "paid"
+                });
+
+                res.json({
+                    campName,
+                    totalRegistrations: total,
+                    paidRegistrations: paid
+                });
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ message: "Server error" });
+            }
+        });
 
 
         // --------------------------------------------------------------
@@ -74,6 +103,11 @@ async function run() {
         // BootCamps all function works here \
         // Create a new camp
         //-----------------------------------------------------------------------
+        app.post('/camps/:id', async (req, res) => {
+            const camp = req.body;
+            const result = await collection_BootCamp.insertOne(camp);
+            res.send(result);
+        });
 
         app.get('/camps', async (req, res) => {
             const query = {};
@@ -96,6 +130,8 @@ async function run() {
             }
         });
 
+
+        // POST /camps/:id/register
 
         // feedBack store to the base and that show also 
         app.post('/feedbacks', async (req, res) => {
