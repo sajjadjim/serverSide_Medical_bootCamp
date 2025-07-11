@@ -30,7 +30,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
         const userCollection_BootCamp = client.db("BootCamp").collection("users");
         const collection_BootCamp = client.db("BootCamp").collection("camps");
         const feedBack_Collection = client.db("BootCamp").collection("feedbacks");
@@ -46,14 +46,12 @@ async function run() {
             res.send(result);
         })
 
-
         app.get('/registrations', async (req, res) => {
             const query = {};
             const cursor = bootCamp_Registration_Collection.find(query);
             const registrations = await cursor.toArray();
             res.send(registrations);
         })
-
         //---------------------------------------------------------------------------------------------------------
         // this is the registration for a specific camp here the count how many user registered for a specific camp
         // and how many paid and unpaid the registration bootCamp 
@@ -76,7 +74,6 @@ async function run() {
                 res.status(500).json({ message: "Server error" });
             }
         });
-
 
         // --------------------------------------------------------------
         // users all code Here 
@@ -103,10 +100,14 @@ async function run() {
         // BootCamps all function works here \
         // Create a new camp
         //-----------------------------------------------------------------------
-        app.post('/camps/:id', async (req, res) => {
+        app.post('/camps', async (req, res) => {
             const camp = req.body;
-            const result = await collection_BootCamp.insertOne(camp);
-            res.send(result);
+            try {
+                const result = await collection_BootCamp.insertOne(camp);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to add camp', error: error.message });
+            }
         });
 
         app.get('/camps', async (req, res) => {
@@ -119,6 +120,7 @@ async function run() {
         // Find a single camp by id
         app.get('/camps/:id', async (req, res) => {
             const id = req.params.id;
+            console.log(id)
             try {
                 const camp = await collection_BootCamp.findOne({ _id: new ObjectId(id) });
                 if (!camp) {
@@ -127,6 +129,57 @@ async function run() {
                 res.send(camp);
             } catch (error) {
                 res.status(400).send({ message: 'Invalid ID format' });
+            }
+        });
+
+        // Get camps created by a specific email (created_by field) by Organizer email by
+        app.get('/camps/created-by/:email', async (req, res) => {
+            const email = req.params.email;
+            try {
+                const camps = await collection_BootCamp.find({ created_by: email }).toArray();
+                res.send(camps);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to fetch camps', error: error.message });
+            }
+        });
+
+        // ✅ Update a camp
+        app.put("/camps/update-camp/:id", async (req, res) => {
+            const id = req.params.id;
+            const updatedCamp = req.body;
+
+            try {
+                const result = await collection_BootCamp.updateOne(
+                    { _id: new ObjectId(id) },
+                    {
+                        $set: {
+                            campName: updatedCamp.campName,
+                            image: updatedCamp.image,
+                            campFees: updatedCamp.campFees,
+                            dateTime: updatedCamp.dateTime,
+                            location: updatedCamp.location,
+                            healthcareProfessional: updatedCamp.healthcareProfessional,
+                            description: updatedCamp.description,
+                        },
+                    }
+                );
+                res.send(result);
+            } catch (error) {
+                console.error("Update error:", error);
+                res.status(500).send({ error: "Failed to update camp" });
+            }
+        });
+
+
+        // Delete a parcel by ID
+        app.delete('/camps/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log("Deleting camp with ID:", id);
+            try {
+                const result = await collection_BootCamp.deleteOne({ _id: new ObjectId(id) });
+                res.send(result);
+            } catch (error) {
+                res.status(400).send({ error: 'Invalid ID format' });
             }
         });
 
