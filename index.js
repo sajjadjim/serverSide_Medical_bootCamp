@@ -5,7 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Load environment variables from .env file
 dotenv.config();
-
+const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_KEY);
 // const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_KEY);
 
 const app = express();
@@ -34,32 +34,71 @@ async function run() {
         const userCollection_BootCamp = client.db("BootCamp").collection("users");
         const collection_BootCamp = client.db("BootCamp").collection("camps");
         const feedBack_Collection = client.db("BootCamp").collection("feedbacks");
-        const bootCamp_Registration_Collection = client.db("BootCamp").collection("registrations");
+        const registration_collection_bootcamp = client.db("BootCamp").collection("registrations");
+        const payment_collection_bootCamps = client.db("BootCamp").collection("payments");
 
 
-        //--------------------------------------------------------------
-        // BootCamp Users all code Here 
-        //--------------------------------------------------------------
         app.post('/registrations', async (req, res) => {
             const registration = req.body;
-            const result = await bootCamp_Registration_Collection.insertOne(registration);
-            res.send(result);
-        })
 
+            try {
+                // Insert the registration data
+                const result = await registration_collection_bootcamp.insertOne(registration);
+
+                console.log("Camp name  registration :", registration.campName)
+
+                // Update the bootCamp's totalCount by +1 using bootCamp name
+                const updateResult = await collection_BootCamp.updateOne(
+                    { campName: registration.campName }, // Make sure this field matches in both collections
+                    { $inc: { totalCount: 1 } }
+                );
+
+                if (updateResult.modifiedCount === 0) {
+                    return res.status(404).send({
+                        message: 'Registration saved, but bootcamp not found to update count.'
+                    });
+                }
+
+                res.send({
+                    message: 'Registration successful and bootcamp count updated.',
+                    registrationResult: result,
+                    countUpdateResult: updateResult
+                });
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                res.status(500).send({ message: 'Failed to register user', error: error.message });
+            }
+        });
+        // Get all registrations
         app.get('/registrations', async (req, res) => {
             const query = {};
-            const cursor = bootCamp_Registration_Collection.find(query);
+            const cursor = registration_collection_bootcamp.find(query);
             const registrations = await cursor.toArray();
             res.send(registrations);
-        })
+        });
+
+        // Get registration by specific ID
+        app.get('/registrations/:id', async (req, res) => {
+            const id = req.params.id;
+            try {
+                const registration = await registration_collection_bootcamp.findOne({ _id: new ObjectId(id) });
+                if (!registration) {
+                    return res.status(404).send({ message: 'Registration not found' });
+                }
+                res.send(registration);
+            } catch (error) {
+                res.status(400).send({ message: 'Invalid ID format' });
+            }
+        });
         //---------------------------------------------------------------------------------------------------------
         // this is the registration for a specific camp here the count how many user registered for a specific camp
         // and how many paid and unpaid the registration bootCamp 
         app.get("/registrations/stats/:campName", async (req, res) => {
             const campName = req.params.campName;
             try {
-                const total = await bootCamp_Registration_Collection.countDocuments({ campName });
-                const paid = await bootCamp_Registration_Collection.countDocuments({
+                const total = await registration_collection_bootcamp.countDocuments({ campName });
+                const paid = await registration_collection_bootcamp.countDocuments({
                     campName,
                     payment_status: "paid"
                 });
@@ -75,10 +114,39 @@ async function run() {
             }
         });
 
+        app.get('/registrations/byEmail/:email', async (req, res) => {
+            const email = req.params.email;
+            // console.log(email);
+            if (!email) {
+                return res.status(400).send({ message: 'Email parameter is required in the URL.' });
+            }
+
+            try {
+                const registrations = await registration_collection_bootcamp
+                    .find({ participantEmail: email })
+                    .toArray();
+
+                res.send(registrations);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to fetch registrations', error: error.message });
+            }
+        });
+
+        app.delete('/registrations/:id', async (req, res) => {
+            const id = req.params.id;
+            // console.log("object" , id)
+            try {
+                const result = await registration_collection_bootcamp.deleteOne({ _id: new ObjectId(id) });
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ error: 'Failed to delete registration' });
+            }
+        });
+
+
         // --------------------------------------------------------------
         // users all code Here 
         //--------------------------------------------------------------
-
         // Get all users
         app.get('/users', async (req, res) => {
             const users = await userCollection_BootCamp.find({}).toArray();
@@ -169,8 +237,6 @@ async function run() {
                 res.status(500).send({ error: "Failed to update camp" });
             }
         });
-
-
         // Delete a parcel by ID
         app.delete('/camps/:id', async (req, res) => {
             const id = req.params.id;
@@ -183,8 +249,104 @@ async function run() {
             }
         });
 
+        //--------------------------------------------=-----------------====
+        // Payment code here
+        //---------------------------------------------------------
+        //Payment code here 
+        //---------------------------------------------------------
 
-        // POST /camps/:id/register
+        app.get('/payments', async (req, res) => {
+            try {
+                const userEmail = req.query.email;
+
+                // console.log("Decoded Token Info:", req.decoded);
+                // if (req.decoded.email !== userEmail) {
+                //   {
+                //     return res.status(403).send({ message: 'Forbidden access' });
+                //   }
+                // }
+
+                const query = userEmail ? { email: userEmail } : {};
+                const options = { sort: { paid_at: -1 } }; // Latest first
+
+                const payments = await payment_collection_bootCamps.find(query, options).toArray();
+                res.send(payments);
+            } catch (error) {
+                console.error('Error fetching payment history:', error);
+                res.status(500).send({ message: 'Failed to get payments' });
+            }
+        });
+
+
+        // app.get('/allPayments', async (req, res) => {
+        //     try {
+        //         const payments = await payment_collection_bootCamps.find({}).sort({ paid_at: -1 }).toArray();
+        //         res.send(payments);
+        //     } catch (error) {
+        //         console.error('Error fetching all payments:', error);
+        //         res.status(500).send({ message: 'Failed to get all payments' });
+        //     }
+        // });
+
+        // POST: Record payment and update parcel status
+        // create a payments collection in MongoDB
+
+        app.post('/payments', async (req, res) => {
+            try {
+                const { campId, campName, email, amount, paymentMethod, transactionId } = req.body;
+                // 1. Update parcel's payment_status
+                const updateResult = await registration_collection_bootcamp.updateOne(
+                    { _id: ObjectId.createFromHexString(campId) },
+                    {
+                        $set: {
+                            payment_status: 'paid'
+                        }
+                    }
+                );
+
+                if (updateResult.modifiedCount === 0) {
+                    return res.status(404).send({ message: 'Parcel not found or already paid' });
+                }
+                // 2. Insert payment record
+                const paymentDoc = {
+                    campId,
+                    campName,
+                    email,
+                    amount,
+                    paymentMethod,
+                    transactionId,
+                    paid_at_string: new Date().toISOString(),
+                    paid_at: new Date(),
+                };
+                const paymentResult = await payment_collection_bootCamps.insertOne(paymentDoc);
+
+                res.status(201).send({
+                    message: 'Payment recorded and parcel marked as paid',
+                    insertedId: paymentResult.insertedId,
+                });
+
+            } catch (error) {
+                console.error('Payment processing failed:', error);
+                res.status(500).send({ message: 'Failed to record payment' });
+            }
+        });
+
+        // POST: Record payment and update parcel status
+        app.post('/create-payment-intent', async (req, res) => {
+            const amountInCents = req.body.amountInCents
+            console.log(amountInCents, "amountInCents")
+            try {
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amountInCents, // Amount in cents
+                    currency: 'usd',
+                    automatic_payment_methods: { enabled: true },
+                });
+
+                res.json({ clientSecret: paymentIntent.client_secret });
+            } catch (error) {
+                res.status(500).json({ error: error.message });
+            }
+        });
 
         // feedBack store to the base and that show also 
         app.post('/feedbacks', async (req, res) => {
