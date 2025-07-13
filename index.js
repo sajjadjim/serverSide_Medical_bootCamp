@@ -148,19 +148,56 @@ async function run() {
         // users all code Here 
         //--------------------------------------------------------------
         // Get all users
-        app.get('/users', async (req, res) => {
-            const users = await userCollection_BootCamp.find({}).toArray();
-            res.send(users);
+        // Update user information by email
+        app.patch('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const { name, image, address, age, gender } = req.body;
+
+            try {
+                const result = await userCollection_BootCamp.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { name, image, age, gender, address } }
+                );
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: 'User not found' });
+                }
+
+                res.send({ message: 'User updated successfully', result });
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to update user', error: error.message });
+            }
         });
 
-        // Get user by email
-        app.get('/users/:email', async (req, res) => {
-            const email = req.params.email;
-            const user = await userCollection_BootCamp.findOne({ email });
-            if (!user) {
-                return res.status(404).send({ message: 'User not found' });
+
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            try {
+                const result = await userCollection_BootCamp.insertOne(user);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to add user', error: error.message });
             }
-            res.send(user);
+        });
+        app.get('/users', async (req, res) => {
+            const email = req.query.email;
+
+            try {
+                if (email) {
+                    // Return specific user by email
+                    const user = await userCollection_BootCamp.findOne({ email });
+                    if (!user) {
+                        return res.status(404).send({ message: 'User not found' });
+                    }
+                    return res.send(user);
+                } else {
+                    // Return all users
+                    const users = await userCollection_BootCamp.find({}).toArray();
+                    return res.send(users);
+                }
+            } catch (error) {
+                console.error('Error fetching user(s):', error);
+                res.status(500).send({ message: 'Internal Server Error' });
+            }
         });
 
 
