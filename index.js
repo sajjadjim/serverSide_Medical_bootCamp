@@ -147,6 +147,14 @@ async function run() {
                 res.status(400).send({ message: 'Invalid ID format' });
             }
         });
+        app.get('/registrations/stats/count',  async (req, res) => {
+            try {
+                const count = await registration_collection_bootcamp.countDocuments({});
+                res.json({ totalRegistrations: count });
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to get registration count', error: error.message });
+            }
+        });
         //---------------------------------------------------------------------------------------------------------
         // this is the registration for a specific camp here the count how many user registered for a specific camp
         // and how many paid and unpaid the registration bootCamp 
@@ -234,7 +242,7 @@ async function run() {
             }
         });
 
-        app.get('/users', verifyTokenFB, async (req, res) => {
+        app.get('/users',verifyTokenFB, async (req, res) => {
             const email = req.query.email;
 
             try {
@@ -278,7 +286,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to get role' });
             }
         });
-        
+
         app.get('/users/stats/count', async (req, res) => {
             try {
                 const count = await userCollection_BootCamp.countDocuments({});
@@ -302,15 +310,37 @@ async function run() {
             }
         });
 
-        app.get('/camps', async (req, res) => {
+        app.get('/camps',verifyTokenFB, async (req, res) => {
             const query = {};
             const cursor = collection_BootCamp.find(query);
             const camps = await cursor.toArray();
             res.send(camps);
         });
 
+        app.get('/camps/top/6', async (req, res) => {
+            try {
+                const topCamps = await collection_BootCamp
+                    .find({})
+                    .sort({ totalCount: -1 })
+                    .limit(6)
+                    .toArray();
+                res.send(topCamps);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to fetch top camps', error: error.message });
+            }
+        });
+
+        app.get('/camps/stats/count', async (req, res) => {
+            try {
+                const count = await collection_BootCamp.countDocuments({});
+                res.json({ totalCamps: count });
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to get camp count', error: error.message });
+            }
+        });
+
         // Find a single camp by id
-        app.get('/camps/:id', async (req, res) => {
+        app.get('/camps/:id',verifyTokenFB, async (req, res) => {
             const id = req.params.id;
             console.log(id)
             try {
@@ -336,7 +366,7 @@ async function run() {
         });
 
         // ✅ Update a camp
-        app.put("/camps/update-camp/:id", async (req, res) => {
+        app.put("/camps/update-camp/:id",verifyTokenFB , verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const updatedCamp = req.body;
 
@@ -362,7 +392,7 @@ async function run() {
             }
         });
         // Delete a parcel by ID
-        app.delete('/camps/:id', async (req, res) => {
+        app.delete('/camps/:id',verifyTokenFB, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             console.log("Deleting camp with ID:", id);
             try {
@@ -461,6 +491,18 @@ async function run() {
         });
 
         // feedBack store to the base and that show also 
+        app.get('/feedbacks/top/10', async (req, res) => {
+            try {
+                const feedbacks = await feedBack_Collection
+                    .find({})
+                    .sort({ rating: -1 }) // Higher rating first
+                    .limit(10)
+                    .toArray();
+                res.send(feedbacks);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to fetch top feedbacks', error: error.message });
+            }
+        });
         app.post('/feedbacks', async (req, res) => {
             const feedback = req.body;
             const result = await feedBack_Collection.insertOne(feedback);
