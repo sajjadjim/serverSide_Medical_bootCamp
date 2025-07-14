@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "medical-camp-management-4da72",
+  "private_key_id": "1ea82277bdf2f0ab4e55eec3b662063cdcdd0eee",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCSN7Oly6YIHSND\n2s27zj87GEJmy3ATmb4WlFLaDNGOoNkgHjsJ/YHoNJex6iRyEPm7naT0bQusNtn3\nD9Yu7kTXh9XCIUdI17x9u5wyh2J0eFc+taCOH3s5Is1pckO/RRobBAiEcZLCZ88A\nsknOc2n72rrelogQi2qW0sNGqHz8v/qvw1mxrCZQDhbtt7Ww8f6n1ICXImQP//ms\n7oEOkyTbwEFy6A5SrzL1TRyZ5gxMRKEe9AFHJGPJskI1T8FawEtR7Ul7Q6OkRb0N\nNPiItQGInzHvKmQ73nMonDLpqNozog2PELwwThVehMxr1Dxu/1iH0afPvsaHXJ9s\nlRtaG0QfAgMBAAECggEARPuAhtzQRQ2yIIYu/8arMC8ezK53/tdOxgpOGE9p4ldi\neHOquOjgC/QcCTUE4se9elVCiIqVsjbimFvhWZzR37lXENJwdh5J8Cu94lzbB0Xr\nK0u3JrYVhXw02uWsrqVkTpCVkB6g9ZTSJWr3xS3QN6EW/oKYSO3taKCgvkopRXh6\ngLtDmlH8XxkHTEI94qmsFZAM/XG4J0THN6wPn2Q4j7eX3VkGccSKsO/CeoUM1iIj\nrBu4QNv4BYV/j/Lrs0OV18Cd3WA5XYonV6X9ErqOrS4kXdi66nQdTJ+ljCtk+GdG\nZSeiSoUZTadyp+cHM58ZBRX1qUYONZ9XL1L6BDpSGQKBgQDLEl2Um8Zd+RmkZ0o0\nhKujvYmzLNpa/0rizHJw4l3sj9wmjj2ErU3+dKyRpGEeF5w74PKt+oNj2k6Ce0EG\nBhBqIiThZ3OuHLZ3EaugA9A3UelwXlWHLD6ztYD8zGAO2uEhY9S2rNSNBAb/jvD0\nWwm1nTwwTtfMcyK7VvByBcMCowKBgQC4U9WXu5glejChFFh5E4Fw7/AV3/8Lf+Vh\nfWQQ8F8uiyFNw6GOUUZPD0yVTm45f+/gL3Z4yxU5DX2F33HVmcuZY/2l72GEshzu\nhHjBbNxdt/2ejyy86NEa7QiY4mqKjSubraoQNazq+7lagk9/EPwQfQTOVs1lmhI5\nedFk0lFMVQKBgGX+L2o4YwVH240rI6YFDIAM7mBDotgZaO9IaCIyT6JFDvl+b393\n27h1uUbdHLoUea/JZ5niPKOmPdBjP2FbIltsEsHzR7KnUS20flK8F5PxXCHH/4UI\nv+VawBI4Q/ayEGjIz0mAvLCm2Sz6CiNwpgvFkTliIBjbqxIUtGdQZYWpAoGAEYff\no5uy37WcVGWT+IfzYqNfSSVRo21ZiokbcET8OHgBBd1aSyfNsQ06cmTQNOXHEaJR\n+TEPZqqyyn2y3ObQp1kMMbDvrGgoOkMdHQBWgQ9TrrXdQmY+JPpwO+Ik0eKVSCwf\nJYWFWZ/xQ/tqxiH+Zy8Muvckd8pMe2zrjlQ2aTUCgYABlP0CZMq9U42wLp3oEmTD\nH8SnqoHcATB6McvyiscsOzmm759YvFxlAtkyi7M+iUEpDCLOKwTZfhimujS2ji3o\nfGUukIDGpnXhThMi/f4OfbGaqL5KjGFD8OSoRS8noAWviAqOAz6vEwTs2Ce4zECi\n0rE6GHBA59hgFwtlY8vJ5w==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@medical-camp-management-4da72.iam.gserviceaccount.com",
+  "client_id": "102266552239211291087",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40medical-camp-management-4da72.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

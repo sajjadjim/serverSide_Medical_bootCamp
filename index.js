@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-
+const admin = require("firebase-admin");
 // Load environment variables from .env file
 dotenv.config();
 const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_KEY);
@@ -14,6 +14,14 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const serviceAccount = JSON.parse(decoded);
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
 
 
 const uri = `mongodb+srv://${process.env.BootCamp_Admin}:${process.env.BootCamp_Admin_Password}@sajjadjim15.ac97xgz.mongodb.net/?retryWrites=true&w=majority&appName=SajjadJim15`;
@@ -37,6 +45,54 @@ async function run() {
         const registration_collection_bootcamp = client.db("BootCamp").collection("registrations");
         const payment_collection_bootCamps = client.db("BootCamp").collection("payments");
 
+        // Middleware to verify Firebase token
+        // This middleware will decode the Firebase token and attach the decoded information to the request object  
+        const verifyTokenFB = async (req, res, next) => {
+            const authorizationHeader = req.headers.authorization;
+            //   console.log(authorizationHeader, "authorizationHeader")
+            if (!authorizationHeader) {
+                return res.status(401).send({ message: 'Unauthorized access' });
+            }
+
+            const token = authorizationHeader.split(' ')[1];
+            //   console.log(token, "token in verifyTokenFB")
+            if (!token) {
+                return res.status(402).send({ message: `Unauthorized access: No Token` });
+            }
+
+            try {
+                const decoded = await admin.auth().verifyIdToken(token);
+                req.decoded = decoded; // ✅ Fix is here
+                next();
+            } catch (error) {
+                console.error(' Verification Firebase Error verifying token:', error);
+                return res.status(403).send({ message: 'Forbidden access' });
+            }
+        };
+
+
+        // // verify as you are a admin 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            console.log("Email in verifyAdmin Admin :", email)
+            const query = { email }
+            const user = await userCollection_BootCamp.findOne(query);
+            if (!user || user.role !== 'admin') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next();
+        }
+        // // verify as you are a Participant 
+        // const verifyParticipant = async (req, res, next) => {
+        //     const email = req.decoded.email;
+        //     console.log(email, "email in verifyParticipant")
+        //     const query = { email }
+        //     const user = await userCollection_BootCamp.findOne(query);
+        //     if (!user || user.role !== 'participant') {
+        //         return res.status(403).send({ message: 'forbidden access' })
+        //     }
+        //     next();
+        // }
 
         app.post('/registrations', async (req, res) => {
             const registration = req.body;
@@ -71,7 +127,7 @@ async function run() {
             }
         });
         // Get all registrations
-        app.get('/registrations', async (req, res) => {
+        app.get('/registrations', verifyTokenFB, async (req, res) => {
             const query = {};
             const cursor = registration_collection_bootcamp.find(query);
             const registrations = await cursor.toArray();
@@ -79,7 +135,7 @@ async function run() {
         });
 
         // Get registration by specific ID
-        app.get('/registrations/:id', async (req, res) => {
+        app.get('/registrations/:id', verifyTokenFB, async (req, res) => {
             const id = req.params.id;
             try {
                 const registration = await registration_collection_bootcamp.findOne({ _id: new ObjectId(id) });
@@ -94,7 +150,7 @@ async function run() {
         //---------------------------------------------------------------------------------------------------------
         // this is the registration for a specific camp here the count how many user registered for a specific camp
         // and how many paid and unpaid the registration bootCamp 
-        app.get("/registrations/stats/:campName", async (req, res) => {
+        app.get("/registrations/stats/:campName", verifyTokenFB, verifyAdmin, async (req, res) => {
             const campName = req.params.campName;
             try {
                 const total = await registration_collection_bootcamp.countDocuments({ campName });
@@ -114,7 +170,7 @@ async function run() {
             }
         });
 
-        app.get('/registrations/byEmail/:email', async (req, res) => {
+        app.get('/registrations/byEmail/:email', verifyTokenFB, async (req, res) => {
             const email = req.params.email;
             // console.log(email);
             if (!email) {
@@ -151,12 +207,12 @@ async function run() {
         // Update user information by email
         app.patch('/users/:id', async (req, res) => {
             const id = req.params.id;
-            const { name, image, address, age, gender } = req.body;
+            const { name, image, address, age, gender, phone } = req.body;
 
             try {
                 const result = await userCollection_BootCamp.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: { name, image, age, gender, address } }
+                    { $set: { name, image, age, gender, address, phone } }
                 );
                 if (result.matchedCount === 0) {
                     return res.status(404).send({ message: 'User not found' });
@@ -178,7 +234,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to add user', error: error.message });
             }
         });
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyTokenFB, async (req, res) => {
             const email = req.query.email;
 
             try {
@@ -200,6 +256,28 @@ async function run() {
             }
         });
 
+        // GET: Get user role by email single elements find out only 
+        app.get('/users/:email/role', verifyTokenFB, async (req, res) => {
+            try {
+                const email = req.params.email;
+                console.log("Fetching role for email:", email);
+
+                if (!email) {
+                    return res.status(400).send({ message: 'Email is required' });
+                }
+
+                const user = await userCollection_BootCamp.findOne({ email });
+
+                if (!user) {
+                    return res.status(404).send({ message: 'User not found' });
+                }
+
+                res.send({ role: user.role || 'participant' });
+            } catch (error) {
+                console.error('Error getting user role:', error);
+                res.status(500).send({ message: 'Failed to get role' });
+            }
+        });
 
         //-------------------------------------------------------------------------------
         // BootCamps all function works here \
@@ -238,7 +316,7 @@ async function run() {
         });
 
         // Get camps created by a specific email (created_by field) by Organizer email by
-        app.get('/camps/created-by/:email', async (req, res) => {
+        app.get('/camps/created-by/:email', verifyTokenFB, verifyAdmin, async (req, res) => {
             const email = req.params.email;
             try {
                 const camps = await collection_BootCamp.find({ created_by: email }).toArray();
@@ -292,16 +370,16 @@ async function run() {
         //Payment code here 
         //---------------------------------------------------------
 
-        app.get('/payments', async (req, res) => {
+        app.get('/payments', verifyTokenFB, async (req, res) => {
             try {
                 const userEmail = req.query.email;
-
-                // console.log("Decoded Token Info:", req.decoded);
-                // if (req.decoded.email !== userEmail) {
-                //   {
-                //     return res.status(403).send({ message: 'Forbidden access' });
-                //   }
-                // }
+                console.log("Fetching payments for email:", userEmail);
+                console.log("Decoded Token Info:", req.decoded);
+                if (req.decoded.email !== userEmail) {
+                    {
+                        return res.status(403).send({ message: 'Forbidden access' });
+                    }
+                }
 
                 const query = userEmail ? { email: userEmail } : {};
                 const options = { sort: { paid_at: -1 } }; // Latest first
@@ -314,20 +392,8 @@ async function run() {
             }
         });
 
-
-        // app.get('/allPayments', async (req, res) => {
-        //     try {
-        //         const payments = await payment_collection_bootCamps.find({}).sort({ paid_at: -1 }).toArray();
-        //         res.send(payments);
-        //     } catch (error) {
-        //         console.error('Error fetching all payments:', error);
-        //         res.status(500).send({ message: 'Failed to get all payments' });
-        //     }
-        // });
-
         // POST: Record payment and update parcel status
         // create a payments collection in MongoDB
-
         app.post('/payments', async (req, res) => {
             try {
                 const { campId, campName, email, amount, paymentMethod, transactionId } = req.body;
@@ -398,15 +464,13 @@ async function run() {
             res.send(feedbacks);
         });
 
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
     }
 }
 run().catch(console.dir);
-
 
 
 app.get('/', (req, res) => {
