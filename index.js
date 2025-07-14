@@ -224,7 +224,6 @@ async function run() {
             }
         });
 
-
         app.post('/users', async (req, res) => {
             const user = req.body;
             try {
@@ -234,6 +233,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to add user', error: error.message });
             }
         });
+
         app.get('/users', verifyTokenFB, async (req, res) => {
             const email = req.query.email;
 
@@ -276,6 +276,15 @@ async function run() {
             } catch (error) {
                 console.error('Error getting user role:', error);
                 res.status(500).send({ message: 'Failed to get role' });
+            }
+        });
+        
+        app.get('/users/stats/count', async (req, res) => {
+            try {
+                const count = await userCollection_BootCamp.countDocuments({});
+                res.json({ totalUsers: count });
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to get user count', error: error.message });
             }
         });
 
