@@ -7,10 +7,8 @@ const admin = require("firebase-admin");
 dotenv.config();
 const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_KEY);
 // const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_KEY);
-
 const app = express();
 const port = process.env.PORT || 3000;
-
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -22,9 +20,7 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
-
 const uri = `mongodb+srv://${process.env.BootCamp_Admin}:${process.env.BootCamp_Admin_Password}@sajjadjim15.ac97xgz.mongodb.net/?retryWrites=true&w=majority&appName=SajjadJim15`;
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
@@ -36,8 +32,6 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
         const userCollection_BootCamp = client.db("BootCamp").collection("users");
         const collection_BootCamp = client.db("BootCamp").collection("camps");
         const feedBack_Collection = client.db("BootCamp").collection("feedbacks");
@@ -68,7 +62,6 @@ async function run() {
                 return res.status(403).send({ message: 'Forbidden access' });
             }
         };
-
 
         // // verify as you are a admin 
         const verifyAdmin = async (req, res, next) => {
@@ -121,7 +114,6 @@ async function run() {
             const registrations = await cursor.toArray();
             res.send(registrations);
         });
-
         // Get registration by specific ID
         app.get('/registrations/:id', verifyTokenFB, async (req, res) => {
             const id = req.params.id;
@@ -165,7 +157,6 @@ async function run() {
                 res.status(500).json({ message: "Server error" });
             }
         });
-
         app.get('/registrations/byEmail/:email', verifyTokenFB, async (req, res) => {
             const email = req.params.email;
             // console.log(email);
@@ -183,7 +174,6 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch registrations', error: error.message });
             }
         });
-
         app.delete('/registrations/:id', async (req, res) => {
             const id = req.params.id;
             // console.log("object" , id)
@@ -219,7 +209,6 @@ async function run() {
                 res.status(500).send({ message: 'Failed to update user', error: error.message });
             }
         });
-
         app.post('/users', async (req, res) => {
             const user = req.body;
             try {
@@ -229,7 +218,6 @@ async function run() {
                 res.status(500).send({ message: 'Failed to add user', error: error.message });
             }
         });
-
         app.get('/users',verifyTokenFB, async (req, res) => {
             const email = req.query.email;
 
@@ -251,7 +239,6 @@ async function run() {
                 res.status(500).send({ message: 'Internal Server Error' });
             }
         });
-
         // GET: Get user role by email single elements find out only 
         app.get('/users/:email/role', verifyTokenFB, async (req, res) => {
             try {
@@ -274,7 +261,6 @@ async function run() {
                 res.status(500).send({ message: 'Failed to get role' });
             }
         });
-
         app.get('/users/stats/count', async (req, res) => {
             try {
                 const count = await userCollection_BootCamp.countDocuments({});
@@ -297,14 +283,12 @@ async function run() {
                 res.status(500).send({ message: 'Failed to add camp', error: error.message });
             }
         });
-
         app.get('/camps',verifyTokenFB, async (req, res) => {
             const query = {};
             const cursor = collection_BootCamp.find(query);
             const camps = await cursor.toArray();
             res.send(camps);
         });
-
         app.get('/camps/top/6', async (req, res) => {
             try {
                 const topCamps = await collection_BootCamp
@@ -317,7 +301,6 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch top camps', error: error.message });
             }
         });
-
         app.get('/camps/stats/count', async (req, res) => {
             try {
                 const count = await collection_BootCamp.countDocuments({});
@@ -326,7 +309,6 @@ async function run() {
                 res.status(500).send({ message: 'Failed to get camp count', error: error.message });
             }
         });
-
         // Find a single camp by id
         app.get('/camps/:id',verifyTokenFB, async (req, res) => {
             const id = req.params.id;
@@ -341,7 +323,6 @@ async function run() {
                 res.status(400).send({ message: 'Invalid ID format' });
             }
         });
-
         // Get camps created by a specific email (created_by field) by Organizer email by
         app.get('/camps/created-by/:email', verifyTokenFB, verifyAdmin, async (req, res) => {
             const email = req.params.email;
