@@ -23,7 +23,6 @@ admin.initializeApp({
 });
 
 
-
 const uri = `mongodb+srv://${process.env.BootCamp_Admin}:${process.env.BootCamp_Admin_Password}@sajjadjim15.ac97xgz.mongodb.net/?retryWrites=true&w=majority&appName=SajjadJim15`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -83,17 +82,6 @@ async function run() {
             next();
         }
         // // verify as you are a Participant 
-        // const verifyParticipant = async (req, res, next) => {
-        //     const email = req.decoded.email;
-        //     console.log(email, "email in verifyParticipant")
-        //     const query = { email }
-        //     const user = await userCollection_BootCamp.findOne(query);
-        //     if (!user || user.role !== 'participant') {
-        //         return res.status(403).send({ message: 'forbidden access' })
-        //     }
-        //     next();
-        // }
-
         app.post('/registrations', async (req, res) => {
             const registration = req.body;
 
@@ -405,7 +393,6 @@ async function run() {
 
         //--------------------------------------------=-----------------====
         // Payment code here
-        //---------------------------------------------------------
         //Payment code here 
         //---------------------------------------------------------
 
@@ -515,10 +502,7 @@ async function run() {
             res.send(feedbacks);
         });
 
-        // await client.db("admin").command({ ping: 1 });
-        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
     }
 }
 run().catch(console.dir);
